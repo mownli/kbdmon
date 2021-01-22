@@ -9,8 +9,8 @@ enable_testing()
 
 add_subdirectory(sdl)
 add_subdirectory(libinput_wrapper)
-add_subdirectory(config_parser)
+add_subdirectory(config_reader)
 
 add_executable(${PROJECT_NAME} main.cpp app.cpp sdl_adapter.cpp)
 
-target_link_libraries(${PROJECT_NAME} sdl libinput_wrapper config_parser)
+target_link_libraries(${PROJECT_NAME} sdl libinput_wrapper config_reader)

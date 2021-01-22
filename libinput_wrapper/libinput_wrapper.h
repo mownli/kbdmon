@@ -23,8 +23,8 @@ public:
 		int scancode;
 	};
 
-	std::optional<Event> pollForEvent();
-	std::optional<Event> waitForEvent(int delay);
+	Event* pollForEvent();
+	Event* waitForEvent(int delay);
 private:
 	const struct libinput_interface interface {
 		.open_restricted {
@@ -44,14 +44,10 @@ private:
 	class EventWrapper
 	{
 		struct libinput** li;
-
-		bool valid = false;
-		struct libinput_event* ptr = nullptr;
-		Event event;
 	public:
+		struct libinput_event* event_ll = nullptr;
+		Event event;
 		Event* getEvent();
-		struct libinput_event* pollForEvent(struct libinput* li);
-		bool isValid() { return valid; }
 		void destroyEvent();
 		EventWrapper(struct libinput** li_) : li(li_) {};
 	} evWrapper{&li};

@@ -93,27 +93,28 @@ void App::Button::setStatusUp(bool keyUp)
 
 int App::exec()
 {
-	for(int i = 0;;)
+	for(;;)
 	{
 		engine->clear();
 		if(engine->processEvents())
 			return 0;
 
-		for(;;)
+		for(int i = 0; i < 10; i++)
 		{
-			auto ev = in.waitForEvent(3000);
-			if(!ev)
-				break;
+			auto ev = in.pollForEvent();
 
-			DEBUG("Scancode: %d", ev->scancode);
-			processEvent(*ev);
+			if(ev)
+			{
+				DEBUG("Scancode: %d", ev->scancode);
+				processEvent(*ev);
+			}
 		}
 
-		if(!(i++ % 100))
-			std::cout << "i = " << i << std::endl;
+//		if(!(i++ % 100))
+//			std::cout << "i = " << i << std::endl;
 
 		renderButtons();
 		engine->update(); // VSync introduces delay
-		//SDL_Delay(500);
+		SDL_Delay(1000);
 	}
 }

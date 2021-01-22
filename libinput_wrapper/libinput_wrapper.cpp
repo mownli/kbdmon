@@ -12,19 +12,19 @@ LibinputWrapper::LibinputWrapper(const std::string& pathToDevice) :
 {
 	if(libinput_path_add_device(li, pathToDevice.c_str()) == nullptr)
 		throw std::runtime_error("Failed to add device");
-	if(libinput_dispatch(li))
-		throw std::runtime_error("libinput_dispatch() error");
+
 }
 
 LibinputWrapper::~LibinputWrapper()
 {
-	if(evWrapper.isValid()) evWrapper.destroyEvent();
+	evWrapper.destroyEvent();
 	if(li) libinput_unref(li);
 }
 
-std::optional<LibinputWrapper::Event> LibinputWrapper::waitForEvent(int delay)
+LibinputWrapper::Event* LibinputWrapper::waitForEvent(int delay)
 {
-	std::optional<Event> ret = {};
+	//std::optional<Event> ret = {};
+	Event* ret = nullptr;
 	switch(poll(&pfd, 1, delay))
 	{
 	case -1:
@@ -42,61 +42,23 @@ std::optional<LibinputWrapper::Event> LibinputWrapper::waitForEvent(int delay)
 		break;
 	default:
 		DEBUG("Ready to read");
-		Event* ptr = evWrapper.getEvent();
-		if(ptr)
-		{
-			ret = {*ptr};
-		}
+		libinput_dispatch(li);
+		ret = evWrapper.getEvent();
 	}
 	return ret;
 }
-//std::optional<LibinputWrapper::Event> LibinputWrapper::pollForEvent()
-//{
-//	std::optional<LibinputWrapper::Event> ret = {};
-//	for(bool stop = false; (stop == false) && evWrapper.pollForEvent(li);)
-//	{
-//		if(evWrapper.isValid())
-//		{
-//			DEBUG("VALID");
-//			ret = {evWrapper.getEvent()};
-//			stop = true;
-//		}
-//		else
-//			ret = {};
-
-//		evWrapper.destroyEvent();
-//	}
-//	libinput_dispatch(li);
-//	return ret;
-//}
-
-//LibinputWrapper::Event LibinputWrapper::EventWrapper::getEvent()
-//{
-//	assert(isValid());
-
-//	auto* kevent = libinput_event_get_keyboard_event(ptr);
-//	auto key_state = libinput_event_keyboard_get_key_state(kevent);
-//	if(key_state == LIBINPUT_KEY_STATE_RELEASED)
-//		event.type = EventType::KEY_UP;
-//	else
-//		event.type = EventType::KEY_DOWN;
-//	event.scancode = libinput_event_keyboard_get_key(kevent);
-
-//	return event;
-//}
+LibinputWrapper::Event* LibinputWrapper::pollForEvent()
+{
+	if(libinput_dispatch(li))
+		throw std::runtime_error("libinput_dispatch() error");
+	return evWrapper.getEvent();
+}
 
 LibinputWrapper::Event* LibinputWrapper::EventWrapper::getEvent()
 {
 	assert(*li);
-
-	event.type = EventType::NONE;
-	event.scancode = -1;
-
-	struct libinput_event* event_ll = libinput_get_event(*li);
-
-	if(event_ll)
+	if((event_ll = libinput_get_event(*li)))
 	{
-		valid = true;
 		if(libinput_event_get_type(event_ll) == LIBINPUT_EVENT_KEYBOARD_KEY)
 		{
 			auto* kevent = libinput_event_get_keyboard_event(event_ll);
@@ -122,37 +84,24 @@ LibinputWrapper::Event* LibinputWrapper::EventWrapper::getEvent()
 		}
 
 		libinput_event_destroy(event_ll);
-		//libinput_dispatch(*li);
+		event_ll = nullptr;
+		libinput_dispatch(*li);
+		return &event;
 	}
 	else
 	{
-		DEBUG("SHIT");
-		valid = false;
-		//libinput_dispatch(*li);
-
+		event.type = EventType::NONE;
+		event.scancode = -1;
 	}
-	libinput_dispatch(*li);
-	return &event;
+
+	return nullptr;
 }
-
-//struct libinput_event* LibinputWrapper::EventWrapper::pollForEvent(struct libinput* li)
-//{
-//	assert(li != nullptr);
-
-//	ptr = libinput_get_event(li);
-//	if(ptr)
-//	{
-//		if(libinput_event_get_type(ptr) == LIBINPUT_EVENT_KEYBOARD_KEY)
-//		{
-//			valid = true;
-//		}
-//	}
-
-//	return ptr;
-//}
 
 void LibinputWrapper::EventWrapper::destroyEvent()
 {
-	valid = false;
-	libinput_event_destroy(ptr);
+	if(event_ll)
+	{
+		libinput_event_destroy(event_ll);
+		event_ll = nullptr;
+	}
 }
