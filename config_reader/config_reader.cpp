@@ -1,5 +1,4 @@
 #include "config_reader.h"
-#include <iostream>
 
 
 ConfigReader::ConfigReader(const std::string& path)
@@ -28,9 +27,15 @@ int ConfigReader::read(const std::string& path)
 		return -1;
 }
 
-std::string ConfigReader::getValue(const std::string& key)
+std::optional<std::string> ConfigReader::getValue(const std::string& key) const
 {
-	return data.at(key);
+	try {
+		return {data.at(key)};
+	}
+	catch(...)
+	{
+		return {};
+	}
 }
 
 void ConfigReader::parse()

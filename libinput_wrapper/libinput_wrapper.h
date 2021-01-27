@@ -7,12 +7,12 @@
 #include <libinput.h>
 
 #include <string>
-#include <optional>
 
 
 class LibinputWrapper
 {
 public:
+	LibinputWrapper() {};
 	LibinputWrapper(const std::string& pathToDevice);
 	~LibinputWrapper();
 
@@ -25,6 +25,7 @@ public:
 
 	Event* pollForEvent();
 	Event* waitForEvent(int delay);
+	void init(const std::string& pathToDevice);
 private:
 	const struct libinput_interface interface {
 		.open_restricted {
@@ -38,7 +39,7 @@ private:
 		}
 	};
 
-	struct libinput* li;
+	struct libinput* li = nullptr;
 	struct pollfd pfd;
 
 	class EventWrapper

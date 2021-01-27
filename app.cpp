@@ -1,20 +1,23 @@
 #include "app.h"
 #include "sdl_adapter.h"
+#include <cassert>
 
 
-App::App() :
-	engine(std::make_unique<SDLAdapter>(WINDOW_TITLE, WIN_WIDTH, WIN_HEIGHT)),
-	in(PATH_TO_KBD)
+App::App(Conf& conf) :
+	engine(std::make_unique<SDLAdapter>(
+		conf.title, conf.w, conf.h)),
+	input(conf.kbdPath)
 {
-	//readConfig(PATH_TO_CONFIG);
-	engine->setupFont(PATH_TO_FONT, 100);
+	engine->setupFont(conf.fontPath, conf.fontSize);
 
-	scanCodesWanted = {0x10, 0x11, 0x12};
+	for(auto row = conf.codesLayout.cbegin(); row != conf.codesLayout.cend(); row++)
+		for(auto i = row->cbegin(); i != row->cend(); i++)
+			scanCodesSet.insert(*i);
 
 	GraphicalEngineAbstract::Color color1 = {.r = 50, .g = 50, .b = 50};
 	GraphicalEngineAbstract::Color color2 = {.r = 200, .g = 200, .b = 200};
 
-	for(int scode : scanCodesWanted)
+	for(int scode : scanCodesSet)
 	{
 		buttons[scode] = std::make_unique<Button>(
 			engine->makeTextureFromText(scanCodeMap.at(scode), color1),
@@ -22,7 +25,7 @@ App::App() :
 			0, 0);
 	}
 
-	auto i = scanCodesWanted.cbegin();
+	auto i = scanCodesSet.cbegin();
 	buttons[*i]->x = 40;
 	buttons[*i]->y = 40;
 
@@ -37,7 +40,8 @@ App::App() :
 
 void App::renderButtons()
 {
-	for(auto scode : scanCodesWanted)
+	assert(!buttons.empty());
+	for(auto scode : scanCodesSet)
 	{
 //		auto b = buttons.at(scode).get();
 //		engine->renderTexture(b->getCurrentTx(), b->getX(), b->getY());
@@ -48,12 +52,13 @@ void App::renderButtons()
 
 void App::processEvent(const LibinputWrapper::Event& ev)
 {
-	if(scanCodesWanted.find(ev.scancode) == scanCodesWanted.cend())
+	if(scanCodesSet.find(ev.scancode) == scanCodesSet.cend())
 	{
 		DEBUG("Ignored scancode %d", ev.scancode);
 		return;
 	}
 
+	assert(!buttons.empty());
 	auto b = buttons.at(ev.scancode).get();
 	switch(ev.type)
 	{
@@ -78,7 +83,7 @@ void App::processEvent(const LibinputWrapper::Event& ev)
 //	catch (...)
 //	{
 //		DEBUG("Ignored scancode %d", ev.scancode);
-//	}
+	//	}
 }
 
 
@@ -101,7 +106,7 @@ int App::exec()
 
 		for(int i = 0; i < 10; i++)
 		{
-			auto ev = in.pollForEvent();
+			auto ev = input.pollForEvent();
 
 			if(ev)
 			{
@@ -115,6 +120,6 @@ int App::exec()
 
 		renderButtons();
 		engine->update(); // VSync introduces delay
-		SDL_Delay(1000);
+		//SDL_Delay(1000);
 	}
 }

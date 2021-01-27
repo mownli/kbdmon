@@ -1,9 +1,10 @@
-#ifndef CONFIG_PARSER_H
-#define CONFIG_PARSER_H
+#ifndef CONFIG_READER_H
+#define CONFIG_READER_H
 
 #include <string>
 #include <fstream>
 #include <unordered_map>
+#include <optional>
 
 
 class ConfigReader
@@ -18,8 +19,7 @@ public:
 	ConfigReader() {};
 	ConfigReader(const std::string& path);
 	int read(const std::string& path);
-	std::string getValue(const std::string& key);
-
+	std::optional<std::string> getValue(const std::string& key) const;
 };
 
-#endif // CONFIG_PARSER_H
+#endif // CONFIG_READER_H

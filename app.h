@@ -1,32 +1,26 @@
 #ifndef APP_H
 #define APP_H
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
 #include <memory>
+#include <deque>
+#include <vector>
 
 #include "libinput_wrapper/libinput_wrapper.h"
+
 #include "scancodemap.h"
 #include "dbg.h"
 #include "texture_abstract.h"
 #include "graphical_engine_abstract.h"
 
 
-const std::string WINDOW_TITLE = "SDL shit";
-const std::string PATH_TO_FONT = "/usr/share/fonts/droid/DroidSansMono.ttf";
-const std::string PATH_TO_CONFIG = "config";
-const int WIN_WIDTH = 640;
-const int WIN_HEIGHT = 480;
-const std::string PATH_TO_KBD = "/dev/input/by-id/usb-01f3_52c0-event-kbd";
-const ScanCodeMap scanCodeMap;
-
-
 class App
 {
+	const ScanCodeMap scanCodeMap;
+
 	std::unique_ptr<GraphicalEngineAbstract> engine;
-	LibinputWrapper in;
+	LibinputWrapper input;
+
+	std::set<int> scanCodesSet;
 
 	class Button
 	{
@@ -51,14 +45,23 @@ class App
 		int x;
 		int y;
 	};
+	std::unordered_map<int, std::unique_ptr<Button>> buttons;
 
 	void renderButtons();
 	void processEvent(const LibinputWrapper::Event& ev);
-public:
-	App();
 
-	std::unordered_map<int, std::unique_ptr<Button>> buttons;
-	std::set<int> scanCodesWanted;
+public:
+	struct Conf {
+		int h = 480;
+		int w = 640;
+		std::string title;
+		std::string kbdPath;
+		std::string fontPath;
+		int fontSize;
+		std::deque<std::vector<int>> codesLayout;
+	};
+
+	App(Conf& conf);
 
 	int exec();
 };

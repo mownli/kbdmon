@@ -2,9 +2,9 @@
 #include "../config_reader.h"
 #include <cstdlib>
 
-const char* emptyFile("empty-file");
-const char* commentsFile("comments-only");
-const char* validFile("valid");
+const static char* emptyFile("empty-file");
+const static char* commentsFile("comments-only");
+const static char* validFile("valid");
 
 TEST(constructor, bad_path)
 {
@@ -21,13 +21,13 @@ TEST(constructor, good_path)
 		abort();
 }
 
-TEST(parse, bad_path)
+TEST(config_reader, bad_path)
 {
 	ConfigReader p;
 	EXPECT_EQ(p.read("non-existent path"), -1);
 }
 
-TEST(parse, good_empty)
+TEST(config_reader, good_empty)
 {
 	ConfigReader p;
 	if(const char* s = std::getenv("DATADIR"))
@@ -38,7 +38,7 @@ TEST(parse, good_empty)
 		abort();
 }
 
-TEST(parse, only_comments)
+TEST(config_reader, only_comments)
 {
 	if(const char* s = std::getenv("DATADIR"))
 	{
@@ -49,16 +49,16 @@ TEST(parse, only_comments)
 		abort();
 }
 
-TEST(parse, valid)
+TEST(config_reader, valid)
 {
 	if(const char* s = std::getenv("DATADIR"))
 	{
 		ConfigReader p;
 		EXPECT_EQ(p.read(std::string(s) + "/" + validFile), 3);
-		EXPECT_STREQ(p.getValue("first").c_str(), "one");
-		EXPECT_STREQ(p.getValue("second").c_str(), "two");
-		EXPECT_STREQ(p.getValue("third").c_str(), "=three");
-		EXPECT_ANY_THROW(p.getValue("whatever"));
+		EXPECT_STREQ(p.getValue("first").value().c_str(), "one");
+		EXPECT_STREQ(p.getValue("second").value().c_str(), "two");
+		EXPECT_STREQ(p.getValue("third").value().c_str(), "=three");
+		EXPECT_EQ(p.getValue("whatever"), std::nullopt);
 	}
 	else
 		abort();

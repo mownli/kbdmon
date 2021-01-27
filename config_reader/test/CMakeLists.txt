@@ -19,7 +19,7 @@ add_executable(
 #target_link_libraries(${PROJECT_NAME} config_parser Catch2::Catch2)
 
 find_package(GTest REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC config_reader GTest::GTest GTest::Main)
+target_link_libraries(${PROJECT_NAME} PRIVATE config_reader GTest::GTest GTest::Main)
 #gtest_discover_tests(${PROJECT_NAME})
 gtest_add_tests(
 	TARGET ${PROJECT_NAME}

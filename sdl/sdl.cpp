@@ -104,7 +104,7 @@ SDL::Texture* SDL::makeTextureFromText(const std::string& text, SDL_Color& color
 //	if(surf == nullptr) throw std::runtime_error(TTF_GetError());
 	auto surf = makeSurfaceFromText(font.get(), text, color);
 
-	SDL_Texture *texture_ll = SDL_CreateTextureFromSurface(rend.getPtr(), surf.get()->getPtr());
+	SDL_Texture *texture_ll = SDL_CreateTextureFromSurface(rend.getPtr(), surf->getPtr());
 	if(texture_ll == nullptr)
 		throwSDLError();
 

@@ -7,7 +7,7 @@ void SDLAdapter::renderTexture(TextureAbstract* tx_, int x, int y)
 	auto txAd = dynamic_cast<SDLTextureAdapter*>(tx_);
 	if(txAd == nullptr)
 		throw std::runtime_error("Bad texture downcast");
-	sdl->renderTexture(txAd->tx, x, y);
+	sdl.renderTexture(txAd->tx, x, y);
 }
 
 TextureAbstract* SDLAdapter::makeTextureFromText(
@@ -15,7 +15,7 @@ TextureAbstract* SDLAdapter::makeTextureFromText(
 	GraphicalEngineAbstract::Color& color)
 {
 	SDL_Color c = {color.r, color.g, color.b, color.a};
-	txAdapters.push_back(SDLTextureAdapter(this, sdl->makeTextureFromText(text, c)));
+	txAdapters.push_back(SDLTextureAdapter(this, sdl.makeTextureFromText(text, c)));
 	return &txAdapters.back();
 }
 

@@ -1,7 +1,6 @@
 #include "libinput_wrapper.h"
 #include <stdexcept>
 #include <cassert>
-
 #include <cstring>
 #include "dbg.h"
 
@@ -23,7 +22,7 @@ LibinputWrapper::~LibinputWrapper()
 
 LibinputWrapper::Event* LibinputWrapper::waitForEvent(int delay)
 {
-	//std::optional<Event> ret = {};
+	assert(li);
 	Event* ret = nullptr;
 	switch(poll(&pfd, 1, delay))
 	{
@@ -47,8 +46,19 @@ LibinputWrapper::Event* LibinputWrapper::waitForEvent(int delay)
 	}
 	return ret;
 }
+
+void LibinputWrapper::init(const std::string& pathToDevice)
+{
+	assert(!li);
+	li = libinput_path_create_context(&interface, nullptr);
+	pfd = {.fd = libinput_get_fd(li), .events = POLLIN};
+	if(libinput_path_add_device(li, pathToDevice.c_str()) == nullptr)
+		throw std::runtime_error("Failed to add device");
+}
+
 LibinputWrapper::Event* LibinputWrapper::pollForEvent()
 {
+	assert(li);
 	if(libinput_dispatch(li))
 		throw std::runtime_error("libinput_dispatch() error");
 	return evWrapper.getEvent();
