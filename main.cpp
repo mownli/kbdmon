@@ -3,24 +3,39 @@
 
 #include <iostream>
 
+const static char* WINDOW_TITLE = "SDL shit";
+const static char* PATH_TO_CONFIG = "/home/gyro/docs/prog/projects/kbdmon/resources/config";
 
-const static std::string WINDOW_TITLE = "SDL shit";
-const static std::string PATH_TO_CONFIG = "/home/gyro/docs/prog/projects/kbdmon/resources/config";
-const static int FONT_SIZE = 100;
+static App::Conf prepareConf()
+{
+	ConfigParser prsr(PATH_TO_CONFIG);
+
+	App::Conf conf {
+		.win_height = prsr.getWinHeight().value_or(100),
+		.win_width = prsr.getWinWidth().value_or(100),
+		.title = WINDOW_TITLE,
+		.layout = prsr.getLayout().value_or(decltype(conf.layout){{"q"}}),
+		.scancodes = prsr.getScancodes().value_or(decltype(conf.scancodes){{"q", 16}})
+	};
+	std::optional<std::string> kbd = prsr.getKbdPath();
+	std::optional<std::string> font = prsr.getFontPath();
+	if(kbd && font)
+	{
+		conf.kbd_path = *kbd;
+		conf.font_path = *font;
+	}
+	else
+	{
+		std::cerr << "Provide input device and a font face" << std::endl;
+		exit(1);
+	}
+
+	return conf;
+}
 
 int main()
 {
-	ConfigParser prsr(PATH_TO_CONFIG);
-	App::Conf conf {
-		.h = prsr.getWinHeight().value_or(480),
-		.w = prsr.getWinWidth().value_or(640),
-		.title = WINDOW_TITLE,
-		.kbdPath = prsr.getKbdPath().value(),
-		.fontPath = prsr.getFontPath().value(),
-		.fontSize = FONT_SIZE,
-		.codesLayout = prsr.getCodes().value_or(std::deque<std::vector<int>>{{0x10, 0x11, 0x12}})
-	};
-
+	App::Conf conf(prepareConf());
 	App a(conf);
 	return a.exec();
 }

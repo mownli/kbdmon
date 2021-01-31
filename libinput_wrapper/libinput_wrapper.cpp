@@ -4,17 +4,15 @@
 #include <cstring>
 #include "dbg.h"
 
-LibinputWrapper::LibinputWrapper(const std::string& pathToDevice) :
+LibinputWrapper::LibinputWrapper(const std::string& path_to_device) :
 	li(libinput_path_create_context(&interface, nullptr)),
 	pfd({.fd = libinput_get_fd(li), .events = POLLIN})
-
 {
-	if(libinput_path_add_device(li, pathToDevice.c_str()) == nullptr)
+	if(libinput_path_add_device(li, path_to_device.c_str()) == nullptr)
 		throw std::runtime_error("Failed to add device");
-
 }
 
-LibinputWrapper::~LibinputWrapper()
+LibinputWrapper::~LibinputWrapper() noexcept
 {
 	evWrapper.destroyEvent();
 	if(li) libinput_unref(li);
@@ -47,12 +45,12 @@ LibinputWrapper::Event* LibinputWrapper::waitForEvent(int delay)
 	return ret;
 }
 
-void LibinputWrapper::init(const std::string& pathToDevice)
+void LibinputWrapper::init(const std::string& path_to_device)
 {
 	assert(!li);
 	li = libinput_path_create_context(&interface, nullptr);
 	pfd = {.fd = libinput_get_fd(li), .events = POLLIN};
-	if(libinput_path_add_device(li, pathToDevice.c_str()) == nullptr)
+	if(libinput_path_add_device(li, path_to_device.c_str()) == nullptr)
 		throw std::runtime_error("Failed to add device");
 }
 
@@ -64,15 +62,15 @@ LibinputWrapper::Event* LibinputWrapper::pollForEvent()
 	return evWrapper.getEvent();
 }
 
-LibinputWrapper::Event* LibinputWrapper::EventWrapper::getEvent()
+LibinputWrapper::Event* LibinputWrapper::EventWrapper::getEvent() noexcept
 {
 	assert(*li);
 	if((event_ll = libinput_get_event(*li)))
 	{
 		if(libinput_event_get_type(event_ll) == LIBINPUT_EVENT_KEYBOARD_KEY)
 		{
-			auto* kevent = libinput_event_get_keyboard_event(event_ll);
-			auto key_state = libinput_event_keyboard_get_key_state(kevent);
+			libinput_event_keyboard* kevent = libinput_event_get_keyboard_event(event_ll);
+			libinput_key_state key_state = libinput_event_keyboard_get_key_state(kevent);
 
 			if(key_state == LIBINPUT_KEY_STATE_RELEASED)
 			{
@@ -85,7 +83,7 @@ LibinputWrapper::Event* LibinputWrapper::EventWrapper::getEvent()
 				DEBUG("Key pressed");
 			}
 			event.scancode = libinput_event_keyboard_get_key(kevent);
-			DEBUG("LL scancode %d", event.scancode);
+			DEBUG("Scancode: %d", event.scancode);
 		}
 		else
 		{

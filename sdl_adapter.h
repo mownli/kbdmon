@@ -10,29 +10,41 @@
 
 class SDLAdapter : public GraphicalEngineAbstract
 {
+private:
 	class SDLTextureAdapter : public TextureAbstract
 	{
+	private:
 		SDLAdapter* parent;
 	public:
-		SDLTextureAdapter(SDLAdapter* ad, SDL::Texture* tx_) : parent(ad), tx(tx_) { assert(ad); };
-		void renderTexture(int x, int y) override { parent->sdl.renderTexture(tx, x, y); };
-		SDL::Texture* tx;
+		SDLTextureAdapter(SDLAdapter* ad, std::unique_ptr<SDL::Texture> tx_) :
+			parent(ad),
+			tx(std::move(tx_)) {}
+		void renderTexture(int x, int y) override
+		{
+			parent->sdl.renderTexture(tx.get(), x, y);
+		}
+		std::unique_ptr<SDL::Texture> tx;
 	};
+
+	SDL sdl;
 public:
 	SDLAdapter(const std::string& title, int w, int h)
 		: sdl(SDL(title, w, h)) { sdl.setKeyboardIgnored(); }
 
-	int setupFont(const std::string& path, int size) override { return sdl.setupFont(path, size); }
-	void clear() override { sdl.clear(); }
-	void update() override { sdl.update(); }
+	int setupFont(const std::string& path, int size) override
+	{
+		return sdl.setupFont(path, size);
+	}
+	void clear() noexcept override { sdl.clear(); }
+	void update() noexcept override { sdl.update(); }
 
-	int processEvents() override;
+	int processEvents() noexcept override;
 	void renderTexture(TextureAbstract* tx_, int x, int y) override;
-	TextureAbstract* makeTextureFromText(const std::string& text, Color& color) override;
-
-	// Deque for immutable storage (of addresses)
-	std::deque<SDLTextureAdapter> txAdapters;
-	SDL sdl;
+	std::unique_ptr<TextureAbstract> makeTextureFromText(const std::string& text, Color& color) override;
+	std::unique_ptr<TextureAbstract> makeSquareTexture(int w, int h, Color& color) override;
+	std::unique_ptr<TextureAbstract> combineTextures(
+		const TextureAbstract* tx1,
+		const TextureAbstract* tx2) override;
 };
 
 #endif // SDL_ADAPTER_H

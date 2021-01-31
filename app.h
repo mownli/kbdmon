@@ -1,64 +1,67 @@
 #ifndef APP_H
 #define APP_H
 
-#include <memory>
 #include <deque>
 #include <vector>
+#include <utility>
+#include <map>
+#include <unordered_map>
+#include <set>
+#include <tuple>
 
 #include "libinput_wrapper/libinput_wrapper.h"
-
-#include "scancodemap.h"
-#include "dbg.h"
 #include "texture_abstract.h"
 #include "graphical_engine_abstract.h"
 
 
 class App
 {
-	const ScanCodeMap scanCodeMap;
-
-	std::unique_ptr<GraphicalEngineAbstract> engine;
-	LibinputWrapper input;
-
-	std::set<int> scanCodesSet;
-
 	class Button
 	{
-		bool up = true;
-		TextureAbstract* upTx;
-		TextureAbstract* downTx;
-		TextureAbstract* currentTx;
+		std::unique_ptr<TextureAbstract> up_tx;
+		std::unique_ptr<TextureAbstract> down_tx;
+		std::unique_ptr<TextureAbstract>* current_tx;
 	public:
 		Button(
-			TextureAbstract* upTx_, TextureAbstract* downTx_,
-			int x_, int y_)
-			: upTx(upTx_), downTx(downTx_), currentTx(upTx_), x(x_), y(y_) {};
+				std::tuple<std::unique_ptr<TextureAbstract>, std::unique_ptr<TextureAbstract>> textures,
+				int x_, int y_) noexcept :
+			up_tx(std::move(std::get<0>(textures))),
+			down_tx(std::move(std::get<1>(textures))),
+			current_tx(&up_tx),
+			x(x_), y(y_) {}
+		Button(Button&& o) noexcept;
 
-		bool isUp() const { return up; }
 		int getX() const { return x; }
 		int getY() const { return y; }
-		TextureAbstract* getUpTx() const { return upTx; }
-		TextureAbstract* getDownTx() const { return downTx; }
-		TextureAbstract* getCurrentTx() const { return currentTx; }
-		void setStatusUp(bool keyUp);
+		TextureAbstract* getUpTx() const { return up_tx.get(); }
+		TextureAbstract* getDownTx() const { return down_tx.get(); }
+		TextureAbstract* getCurrentTx() const { return current_tx->get(); }
+		void setStatusUp(bool keyUp) noexcept;
 
 		int x;
 		int y;
+		bool visible = true;
 	};
-	std::unordered_map<int, std::unique_ptr<Button>> buttons;
 
-	void renderButtons();
-	void processEvent(const LibinputWrapper::Event& ev);
+	std::unique_ptr<GraphicalEngineAbstract> engine;
+	std::unique_ptr<LibinputWrapper> input;
+	std::set<int> scancodes_set;
+	std::deque<Button> buttons;
+	std::unordered_map<int, Button&> button_map;
 
+	void renderButtons() noexcept;
+	void processEvent(const LibinputWrapper::Event& ev) noexcept;
+	int findLayoutRowSizeMax(const std::vector<std::vector<std::string>>& codes_layout) const noexcept;
+	void printScancodes() const noexcept;
 public:
 	struct Conf {
-		int h = 480;
-		int w = 640;
+		int win_height;
+		int win_width;
 		std::string title;
-		std::string kbdPath;
-		std::string fontPath;
-		int fontSize;
-		std::deque<std::vector<int>> codesLayout;
+		std::string kbd_path;
+		std::string font_path;
+		std::vector<std::vector<std::string>> layout;
+		std::map<std::string, int> scancodes;
 	};
 
 	App(Conf& conf);

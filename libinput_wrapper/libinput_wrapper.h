@@ -13,20 +13,32 @@ class LibinputWrapper
 {
 public:
 	LibinputWrapper() {};
-	LibinputWrapper(const std::string& pathToDevice);
-	~LibinputWrapper();
+	LibinputWrapper(const std::string& path_to_device);
+	~LibinputWrapper() noexcept;
 
-	enum class EventType {KEY_UP, KEY_DOWN, NONE};
+	enum class EventType {NONE, KEY_UP, KEY_DOWN};
 	struct Event
 	{
-		EventType type;
-		int scancode;
+		EventType type = EventType::NONE;
+		int scancode = -1;
 	};
 
 	Event* pollForEvent();
 	Event* waitForEvent(int delay);
-	void init(const std::string& pathToDevice);
+	void init(const std::string& path_to_device);
 private:
+	class EventWrapper
+	{
+		struct libinput** li;
+	public:
+		struct libinput_event* event_ll = nullptr;
+		Event event{};
+
+		Event* getEvent() noexcept;
+		void destroyEvent();
+		EventWrapper(struct libinput** li_) noexcept : li(li_) {};
+	};
+
 	const struct libinput_interface interface {
 		.open_restricted {
 			[](const char *path, int flags, void*) {
@@ -40,18 +52,9 @@ private:
 	};
 
 	struct libinput* li = nullptr;
-	struct pollfd pfd;
+	struct pollfd pfd{};
 
-	class EventWrapper
-	{
-		struct libinput** li;
-	public:
-		struct libinput_event* event_ll = nullptr;
-		Event event;
-		Event* getEvent();
-		void destroyEvent();
-		EventWrapper(struct libinput** li_) : li(li_) {};
-	} evWrapper{&li};
+	EventWrapper evWrapper{&li};
 };
 
 #endif // LIBINPUT_WRAPPER_H

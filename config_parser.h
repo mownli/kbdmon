@@ -12,23 +12,27 @@
 class ConfigParser
 {
 public:
-	ConfigParser() {};
 	ConfigParser(const std::string& path);
 
-	std::optional<std::deque<std::vector<int>>> getCodes() const;
-	std::optional<std::string> getKbdPath() const;
-	std::optional<std::string> getFontPath() const;
-	std::optional<int> getWinHeight() const;
-	std::optional<int> getWinWidth() const;
+	std::optional<std::string> getKbdPath() const noexcept;
+	std::optional<std::string> getFontPath() const noexcept;
+	std::optional<int> getWinHeight() const noexcept;
+	std::optional<int> getWinWidth() const noexcept;
+	std::optional<std::vector<std::vector<std::string>>> getLayout() const noexcept;
+	std::optional<std::map<std::string, int>> getScancodes() const noexcept;
 private:
-	std::deque<std::vector<int>> codes{};
-	std::string kbdPath{};
-	std::string fontPath{};
-	int winHeight = -1;
-	int winWidth = -1;
+	std::vector<std::vector<std::string>> layout;
+	std::map<std::string, int> scancodes;
+	std::string kbd_path;
+	std::string font_path;
+	int win_height;
+	int win_width;
 
-	void parseCodes(const std::string& layout);
+	void parseLayoutMap(const std::map<std::string, std::string>& layout_map) noexcept;
+	void parseScancodes(const std::map<std::string, std::string>& scancodes_map) noexcept;
 	void readData(const std::string& path);
+
+	static void parseIntString(int& dest, const std::string& str) noexcept;
 };
 
 #endif // CONFIG_PARSER_H

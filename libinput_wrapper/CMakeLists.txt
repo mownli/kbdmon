@@ -7,4 +7,4 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(${PROJECT_NAME} libinput_wrapper.cpp)
 
-target_link_libraries(${PROJECT_NAME} -linput)
+target_link_libraries(${PROJECT_NAME} PRIVATE -linput)

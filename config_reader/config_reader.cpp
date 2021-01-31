@@ -1,4 +1,5 @@
 #include "config_reader.h"
+#include <cassert>
 
 
 ConfigReader::ConfigReader(const std::string& path)
@@ -6,13 +7,18 @@ ConfigReader::ConfigReader(const std::string& path)
 	f.open(path);
 	if(!f.is_open())
 	{
-		throw std::runtime_error("Couldn't open " + path);
+		throw FileError();
 	}
 	else
-		parse();
+	{
+		if(parse() == -1)
+		{
+			throw ParsingError();
+		}
+	}
 }
 
-int ConfigReader::read(const std::string& path)
+int ConfigReader::openAndParse(const std::string& path)
 {
 	if(f.is_open())
 		f.close();
@@ -20,17 +26,22 @@ int ConfigReader::read(const std::string& path)
 	f.open(path);
 	if(f.is_open())
 	{
-		parse();
-		return keysParsed;
+		if(parse() == -1)
+		{
+			return -1;
+		}
+		return keys_parsed;
 	}
 	else
 		return -1;
 }
 
-std::optional<std::string> ConfigReader::getValue(const std::string& key) const
+std::optional<std::string> ConfigReader::getValue(
+	const std::string& section,
+	const std::string& key) const noexcept
 {
 	try {
-		return {data.at(key)};
+		return {data.at(section).at(key)};
 	}
 	catch(...)
 	{
@@ -38,25 +49,88 @@ std::optional<std::string> ConfigReader::getValue(const std::string& key) const
 	}
 }
 
-void ConfigReader::parse()
+std::optional<std::map<std::string, std::string>> ConfigReader::getSection(const std::string& section_key) const noexcept
 {
-	std::string line;
-	keysParsed = 0;
-	while(std::getline(f, line))
+	try {
+		return {data.at(section_key)};
+	}
+	catch(...)
 	{
-		if((line.size() == 0) || (line[0] == '#') || (line[0] == '='))
-		{
-			continue;
-		}
+		return {};
+	}
+}
 
-		for(auto it = line.cbegin(); it != line.cend(); it++)
+std::string ConfigReader::trimString(const std::string& str) noexcept
+{
+	std::string::const_iterator front = str.cbegin();
+	std::string::const_reverse_iterator back = str.crbegin();
+	for(; front != str.cend(); front++)
+	{
+		if(!std::isspace(*front))
 		{
-			if(*it == '=')
+			break;
+		}
+	}
+	if(front != str.end())
+	{
+		for(; back != str.crend(); back++)
+		{
+			if(!std::isspace(*back))
 			{
-				data[std::string(line.cbegin(), it)] = std::string(it + 1, line.cend());
-				keysParsed++;
 				break;
 			}
 		}
 	}
+	return {front, back.base()};
+}
+
+int ConfigReader::parse()
+{
+	assert(f.is_open());
+	std::string line;
+	keys_parsed = 0;
+	std::string section{};
+	while(std::getline(f, line))
+	{
+		line = trimString(line);
+		if((line.size() == 0) || (line.front() == '#'))
+			continue;
+		if(line.front() == '=')
+			return -1;
+
+		if(line.front() == '[')
+		{
+			if(line.back() == ']')
+			{
+				section = trimString({line.cbegin() + 1, line.cend() - 1});
+				continue;
+			}
+			else
+				return -1;
+		}
+
+		std::string::const_iterator delimiter = line.cend();
+		std::string::const_iterator head = line.cbegin();
+		for(; head != line.cend(); head++)
+		{
+			if((*head == '#') && (delimiter == line.cend()))
+				return -1;
+
+			if((*head == '=') && (delimiter == line.cend()))
+				delimiter = head;
+
+			if(*head == '#')
+				break;
+		}
+		if(delimiter != line.cend())
+		{
+			auto ret = data[section].insert({trimString({line.cbegin(), delimiter}), trimString({delimiter + 1, head})});
+			if(!ret.second)
+				return -1;
+			keys_parsed++;
+		}
+		else
+			return -1;
+	}
+	return keys_parsed;
 }

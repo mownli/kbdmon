@@ -13,10 +13,10 @@ add_subdirectory(config_reader)
 add_subdirectory(test)
 
 add_library(config_parser config_parser.cpp)
-target_link_libraries(config_parser config_reader)
+target_link_libraries(config_parser PRIVATE config_reader)
 
 add_library(app app.cpp sdl_adapter.cpp)
-target_link_libraries(app sdl libinput_wrapper config_parser)
+target_link_libraries(app PRIVATE sdl libinput_wrapper config_parser)
 
 add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} app)
+target_link_libraries(${PROJECT_NAME} PRIVATE app)

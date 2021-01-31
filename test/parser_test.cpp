@@ -1,44 +1,51 @@
 #include "gtest/gtest.h"
 #include "../config_parser.h"
+#include <iostream>
+
+const static char* DATA_DIR_ENV = "DATADIR";
+
+const static char* VALID_FILE("valid");
+const static char* MISMATCH_FILE("mismatch");
+const static char* NON_EXISTENT_FILE("dsfjdfklljkdfsljksdwoepqiropqweirpoweir");
 
 
-const static char* configFile("config");
-const static char* configFile2("config2");
-
-TEST(getFromConfig, first)
+class ConfigParserTest : public ::testing::Test
 {
-	if(const char* s = std::getenv("DATADIR"))
-	{
-		ConfigParser prsr(std::string(s) + "/" + configFile);
-		auto vect = prsr.getCodes();
-		EXPECT_EQ(vect.value()[0][0], 33);
-		EXPECT_EQ(vect.value()[0][1], 44);
-		EXPECT_EQ(vect.value()[1][0], 1);
-		EXPECT_EQ(vect.value()[1][1], 0);
-		EXPECT_EQ(vect.value()[1][2], 0);
-		EXPECT_EQ(vect.value()[1][3], 0);
-		EXPECT_EQ(vect.value()[2][0], 5);
+protected:
+  void SetUp() override
+  {
+	  if((s = std::getenv(DATA_DIR_ENV))) {}
+	  else abort();
+  }
+  const char* s;
+  // void TearDown() override {}
+};
 
-		EXPECT_STREQ(prsr.getKbdPath()->c_str(), "/dev/input/by-path/pci-0000:15:00.0-usb-0:5:1.0-event-kbd");
-		EXPECT_STREQ(prsr.getFontPath()->c_str(), "/usr/share/fonts/liberation/LiberationSans-Regular.ttf");
-		EXPECT_EQ(prsr.getWinHeight().value(), 640);
-		EXPECT_EQ(prsr.getWinWidth().value(), 480);
+TEST_F(ConfigParserTest, valid)
+{
+	ConfigParser prsr(std::string(s) + "/" + VALID_FILE);
+	auto layout = prsr.getLayout();
+
+	std::cout << "size_outer=" << layout->size() << std::endl;
+
+	for(auto& row : *layout)
+	{
+		std::cout << "size_inner=" << row.size() << std::endl;
+		for(auto& str : row)
+		{
+			std::cout << str << std::endl;
+		}
 	}
-	else
-		abort();
+
+	EXPECT_EQ((*layout)[0].front(), "q");
+	EXPECT_EQ((*layout)[1].front(), "");
+	EXPECT_EQ((*layout)[2].front(), "e");
 }
 
-TEST(getFromConfig, second)
+TEST_F(ConfigParserTest, failure)
 {
-	if(const char* s = std::getenv("DATADIR"))
-	{
-		ConfigParser prsr(std::string(s) + "/" + configFile2);
-		auto vect = prsr.getCodes();
-		EXPECT_EQ(vect->size(), 1);
-		EXPECT_EQ(vect.value()[0][0], 33);
-		EXPECT_EQ(vect.value()[0][1], 44);
-		EXPECT_EQ(vect.value()[0][2], 55);
-	}
-	else
-		abort();
+	ConfigParser prsr(std::string(s) + "/" + MISMATCH_FILE);
+	EXPECT_EQ(prsr.getScancodes(), std::nullopt);
+
+	EXPECT_ANY_THROW(ConfigParser qq(NON_EXISTENT_FILE));
 }

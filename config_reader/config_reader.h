@@ -3,23 +3,29 @@
 
 #include <string>
 #include <fstream>
-#include <unordered_map>
+#include <map>
 #include <optional>
 
 
 class ConfigReader
 {
+private:
 	std::ifstream f;
-	std::unordered_map<std::string, std::string> data;
+	std::map<std::string, std::map<std::string, std::string>> data;
+	int keys_parsed = 0;
 
-	void parse();
+	int parse() ;
 public:
-	int keysParsed = 0;
-
 	ConfigReader() {};
 	ConfigReader(const std::string& path);
-	int read(const std::string& path);
-	std::optional<std::string> getValue(const std::string& key) const;
+	int openAndParse(const std::string& path) ;
+	std::optional<std::string> getValue(const std::string& section, const std::string& key) const noexcept;
+	std::optional<std::map<std::string, std::string>> getSection(const std::string& section_key) const noexcept;
+
+	static std::string trimString(const std::string& str) noexcept;
+
+	class ParsingError : public std::exception {};
+	class FileError : public std::exception {};
 };
 
 #endif // CONFIG_READER_H

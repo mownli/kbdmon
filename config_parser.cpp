@@ -1,45 +1,104 @@
 #include "config_parser.h"
-#include "dbg.h"
+
+#include <sstream>
+#include <string>
+#include <iostream>
+#include <cassert>
 
 
-std::optional<std::deque<std::vector<int>>> ConfigParser::getCodes() const
+std::optional<std::string> ConfigParser::getKbdPath() const noexcept
 {
-	if(codes.empty())
+	if(kbd_path.empty())
+	{
+		std::cerr << "Couldn't get keyboard from the file" << std::endl;
 		return {};
+	}
 	else
-		return {codes};
+		return {kbd_path};
 }
 
-std::optional<std::string> ConfigParser::getKbdPath() const
+std::optional<std::string> ConfigParser::getFontPath() const noexcept
 {
-	if(kbdPath.empty())
+	if(font_path.empty())
+	{
+		std::cerr << "Couldn't get font from the file" << std::endl;
 		return {};
+	}
 	else
-		return {kbdPath};
+		return {font_path};
 }
 
-std::optional<std::string> ConfigParser::getFontPath() const
+std::optional<int> ConfigParser::getWinHeight() const noexcept
 {
-	if(fontPath.empty())
+	if(win_height < 1)
+	{
+		std::cerr << "Couldn't get window height from the file" << std::endl;
 		return {};
+	}
 	else
-		return {fontPath};
+		return {win_height};
 }
 
-std::optional<int> ConfigParser::getWinHeight() const
+std::optional<int> ConfigParser::getWinWidth() const noexcept
 {
-	if(winHeight == -1)
+	if(win_width < 1)
+	{
+		std::cerr << "Couldn't get window width from the file" << std::endl;
 		return {};
+	}
 	else
-		return {winHeight};
+		return {win_width};
 }
 
-std::optional<int> ConfigParser::getWinWidth() const
+std::optional<std::vector<std::vector<std::string>>> ConfigParser::getLayout() const noexcept
 {
-	if(winWidth == -1)
+	if(layout.empty())
+	{
+		std::cerr << "Couldn't get layout from the file" << std::endl;
 		return {};
+	}
 	else
-		return {winWidth};
+		return {layout};
+}
+
+std::optional<std::map<std::string, int> > ConfigParser::getScancodes() const noexcept
+{
+	if(scancodes.empty())
+	{
+		std::cerr << "Couldn't get scancodes from the file" << std::endl;
+		return {};
+	}
+	else
+		return {scancodes};
+}
+
+void ConfigParser::parseLayoutMap(const std::map<std::string, std::string>& layout_map) noexcept
+{
+	for(const std::pair<const std::string, std::string>& row : layout_map)
+	{
+		layout.emplace_back();
+
+		std::string::const_iterator tail = row.second.cbegin();
+		if(tail == row.second.cend())
+		{
+			layout.back().emplace_back("");
+			continue;
+		}
+		for(std::string::const_iterator head = row.second.cbegin();;)
+		{
+			if((*head == ',') || (*head == ';'))
+			{
+				layout.back().push_back(ConfigReader::trimString({tail, head}));
+				tail = head + 1;
+			}
+			head++;
+			if(head == row.second.cend())
+			{
+				layout.back().push_back(ConfigReader::trimString({tail, head}));
+				break;
+			}
+		}
+	}
 }
 
 ConfigParser::ConfigParser(const std::string& path)
@@ -50,74 +109,58 @@ ConfigParser::ConfigParser(const std::string& path)
 void ConfigParser::readData(const std::string& path)
 {
 	ConfigReader rdr(path);
-	auto layout = rdr.getValue("layout");
-	if(layout) parseCodes(*layout);
 
-	auto kbd = rdr.getValue("kbd");
-	if(kbd) kbdPath = *kbd;
+	auto layout_map(rdr.getSection("layout"));
+	if(layout_map) parseLayoutMap(*layout_map);
 
-	auto font = rdr.getValue("font");
-	if(font) fontPath = *font;
+	auto scancodes_map(rdr.getSection("scancodes"));
+	if(scancodes_map) parseScancodes(*scancodes_map);
 
-	auto height = rdr.getValue("height");
-	if(height)
+	kbd_path = rdr.getValue("general", "kbd").value_or("");
+	font_path = rdr.getValue("general", "font").value_or("");
+
+	parseIntString(win_height, rdr.getValue("general", "height").value_or(""));
+	parseIntString(win_width, rdr.getValue("general", "width").value_or(""));
+}
+
+void ConfigParser::parseIntString(int& dest, const std::string& str) noexcept
+{
+	std::istringstream ss(str);
+	if(ss >> dest) {}
+	else
 	{
-		try
-		{
-			winHeight = std::stoi(*height);
-		}
-		catch(...) {}
-	}
-
-	auto width = rdr.getValue("width");
-	if(width)
-	{
-		try
-		{
-			winWidth = std::stoi(*width);
-		}
-		catch(...) {}
+		dest = -1;
 	}
 }
 
-void ConfigParser::parseCodes(const std::string& layout)
+void ConfigParser::parseScancodes(const std::map<std::string, std::string>& scancodes_map) noexcept
 {
-	codes.push_back(std::vector<int>());
-	auto dequeIter = codes.begin();
-
-	auto head = layout.cbegin(), tail = head;
-	auto conversion = [&]()
-	{
-		try {
-			int num = std::stoi(std::string(tail, head));
-			dequeIter->push_back(num);
-		}
-		catch(std::invalid_argument& e) {
-			dequeIter->push_back(0);
-		}
-		tail = head + 1;
-	};
-
-	while(1)
-	{
-		if(*head == ',')
+	std::stringstream ss{};
+	try	{
+		for(const std::vector<std::string>& row : layout)
 		{
-			conversion();
-		}
-		else if(*head == ';')
-		{
-			conversion();
-			codes.push_back(std::vector<int>());
-			dequeIter++;
-		}
+			for(const std::string& str : row)
+			{
+				if(str == "")
+					continue;
 
-		if(++head == layout.cend())
-		{
-			conversion();
-			break;
+				ss << scancodes_map.at(str);
+				int num = -1;
+				ss >> num;
+				auto ret = scancodes.insert({str, num});
+				if(!ret.second || ss.fail())
+				{
+					scancodes.clear();
+					std::cerr << "Failure parsing scancode \"" << str << "\"" << std::endl;
+					return;
+				}
+				ss.str("");
+				ss.clear();
+			}
 		}
 	}
-
-	if(codes.back().size() == 0)
-		codes.pop_back();
+	catch(std::out_of_range& e) {
+		scancodes.clear();
+		std::cerr << "Mismatch of layout and scancodes" << std::endl;
+	}
 }
