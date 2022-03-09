@@ -9,10 +9,10 @@
 #include <stdexcept>
 
 
-class SDL
+class EngineSDL
 {
 public:
-	SDL(const std::string& title, int w, int h) : win(title, w, h), renderer(win.getPtr()) {}
+	EngineSDL(const std::string& title, int w, int h) : win(title, w, h), renderer(win.getPtr()) {}
 
 	class Font
 	{

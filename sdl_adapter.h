@@ -16,20 +16,20 @@ private:
 	private:
 		SDLAdapter* parent;
 	public:
-		SDLTextureAdapter(SDLAdapter* ad, std::unique_ptr<SDL::Texture> tx_) :
+		SDLTextureAdapter(SDLAdapter* ad, std::unique_ptr<EngineSDL::Texture> tx_) :
 			parent(ad),
 			tx(std::move(tx_)) {}
 		void renderTexture(int x, int y) override
 		{
 			parent->sdl.renderTexture(tx.get(), x, y);
 		}
-		std::unique_ptr<SDL::Texture> tx;
+		std::unique_ptr<EngineSDL::Texture> tx;
 	};
 
-	SDL sdl;
+	EngineSDL sdl;
 public:
 	SDLAdapter(const std::string& title, int w, int h)
-		: sdl(SDL(title, w, h)) { sdl.setKeyboardIgnored(); }
+		: sdl(EngineSDL(title, w, h)) { sdl.setKeyboardIgnored(); }
 
 	int setupFont(const std::string& path, int size) override
 	{

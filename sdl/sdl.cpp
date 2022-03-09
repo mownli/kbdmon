@@ -4,19 +4,19 @@
 #include <string>
 
 
-SDL::Engine::Engine()
+EngineSDL::Engine::Engine()
 {
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0 || TTF_Init() != 0)
 		throwSDLError();
 }
 
-SDL::Engine::~Engine() noexcept
+EngineSDL::Engine::~Engine() noexcept
 {
 	TTF_Quit();
 	SDL_Quit();
 }
 
-SDL::Window::Window(const std::string& title, int w, int h)
+EngineSDL::Window::Window(const std::string& title, int w, int h)
 {
 	ptr = SDL_CreateWindow(
 				title.c_str(),
@@ -29,12 +29,12 @@ SDL::Window::Window(const std::string& title, int w, int h)
 		throwSDLError();
 }
 
-SDL::Window::~Window() noexcept
+EngineSDL::Window::~Window() noexcept
 {
 	if(ptr != nullptr) SDL_DestroyWindow(ptr);
 }
 
-SDL::Renderer::Renderer(SDL_Window* window)
+EngineSDL::Renderer::Renderer(SDL_Window* window)
 {
 	ptr = SDL_CreateRenderer(
 				window,
@@ -44,12 +44,12 @@ SDL::Renderer::Renderer(SDL_Window* window)
 		throwSDLError();
 }
 
-SDL::Renderer::~Renderer() noexcept
+EngineSDL::Renderer::~Renderer() noexcept
 {
 	if(ptr != nullptr) SDL_DestroyRenderer(ptr);
 }
 
-SDL::Font::Font(const std::string& path, int size)
+EngineSDL::Font::Font(const std::string& path, int size)
 {
 	DEBUG("Creating Font object");
 	ptr = TTF_OpenFont(path.c_str(), size);
@@ -58,25 +58,25 @@ SDL::Font::Font(const std::string& path, int size)
 	DEBUG("Font address: %p", ptr);
 }
 
-SDL::Font::~Font() noexcept
+EngineSDL::Font::~Font() noexcept
 {
 	DEBUG("Destroying Font object %p", ptr);
 	if(ptr != nullptr) TTF_CloseFont(ptr);
 }
 
-int SDL::setupFont(const std::string& path, int size)
+int EngineSDL::setupFont(const std::string& path, int size)
 {
 	DEBUG("Setting up font");
 	font = std::make_unique<Font>(path, size);
 	return font == nullptr;
 }
 
-std::unique_ptr<SDL::Texture> SDL::makeTextureFromText(const std::string& text, SDL_Color& color)
+std::unique_ptr<EngineSDL::Texture> EngineSDL::makeTextureFromText(const std::string& text, SDL_Color& color)
 {
 	DEBUG("Creating Texture object");
 	if(font == nullptr) throw std::runtime_error("Font is not initialized");
 
-	std::unique_ptr<SDL::Surface> surf = makeSurfaceFromText(font.get(), text, color);
+	std::unique_ptr<EngineSDL::Surface> surf = makeSurfaceFromText(font.get(), text, color);
 
 	SDL_Texture *texture_ll = SDL_CreateTextureFromSurface(renderer.getPtr(), surf->getPtr());
 	if(texture_ll == nullptr)
@@ -86,7 +86,7 @@ std::unique_ptr<SDL::Texture> SDL::makeTextureFromText(const std::string& text, 
 	return std::make_unique<Texture>(texture_ll);
 }
 
-std::unique_ptr<SDL::Texture> SDL::combineTextures(const SDL::Texture* tx1, const SDL::Texture* tx2)
+std::unique_ptr<EngineSDL::Texture> EngineSDL::combineTextures(const EngineSDL::Texture* tx1, const EngineSDL::Texture* tx2)
 {
 	DEBUG("Combining textures %p and %p", tx1->getPtr(), tx2->getPtr());
 	int w1, h1;
@@ -115,13 +115,13 @@ std::unique_ptr<SDL::Texture> SDL::combineTextures(const SDL::Texture* tx1, cons
 	SDL_SetRenderTarget(renderer.getPtr(), nullptr);
 
 	DEBUG("Combination result: %p", target_tx);
-	return std::make_unique<SDL::Texture>(target_tx);
+	return std::make_unique<EngineSDL::Texture>(target_tx);
 }
 
-std::unique_ptr<SDL::Texture> SDL::makeSquareTexture(int w, int h, SDL_Color& color)
+std::unique_ptr<EngineSDL::Texture> EngineSDL::makeSquareTexture(int w, int h, SDL_Color& color)
 {
 	DEBUG("Creating square Texture object");
-	std::unique_ptr<SDL::Surface> surf = makeSquareSurface(w, h, color);
+	std::unique_ptr<EngineSDL::Surface> surf = makeSquareSurface(w, h, color);
 
 	SDL_Texture *texture_ll = SDL_CreateTextureFromSurface(renderer.getPtr(), surf->getPtr());
 	if(texture_ll == nullptr)
@@ -131,7 +131,7 @@ std::unique_ptr<SDL::Texture> SDL::makeSquareTexture(int w, int h, SDL_Color& co
 	return std::make_unique<Texture>(texture_ll);
 }
 
-void SDL::renderTexture(SDL::Texture* texture, int x, int y) noexcept
+void EngineSDL::renderTexture(EngineSDL::Texture* texture, int x, int y) noexcept
 {
 	// DEBUG("Rendering texture %p", texture ? texture->getPtr() : nullptr);
 	if(texture == nullptr)
@@ -146,26 +146,26 @@ void SDL::renderTexture(SDL::Texture* texture, int x, int y) noexcept
 	SDL_RenderCopy(renderer.getPtr(), texture->getPtr(), NULL, &dst);
 }
 
-void SDL::setKeyboardIgnored() noexcept
+void EngineSDL::setKeyboardIgnored() noexcept
 {
 	SDL_EventState(SDL_KEYDOWN, SDL_IGNORE);
 	SDL_EventState(SDL_KEYUP, SDL_IGNORE);
 }
 
-SDL::Texture::~Texture() noexcept
+EngineSDL::Texture::~Texture() noexcept
 {
 	DEBUG("Destroying Texture object %p", ptr);
 	if(ptr != nullptr) SDL_DestroyTexture(ptr);
 }
 
-SDL::Surface::~Surface() noexcept
+EngineSDL::Surface::~Surface() noexcept
 {
 	DEBUG("Destroying Surface object %p", ptr);
 	if(ptr != nullptr) SDL_FreeSurface(ptr);
 }
 
-std::unique_ptr<SDL::Surface> SDL::makeSurfaceFromText(
-	SDL::Font* font,
+std::unique_ptr<EngineSDL::Surface> EngineSDL::makeSurfaceFromText(
+	EngineSDL::Font* font,
 	const std::string& text,
 	SDL_Color& color)
 {
@@ -174,10 +174,10 @@ std::unique_ptr<SDL::Surface> SDL::makeSurfaceFromText(
 	if(surf == nullptr) throw std::runtime_error(TTF_GetError());
 
 	DEBUG("Surface address: %p", surf);
-	return std::make_unique<SDL::Surface>(surf);
+	return std::make_unique<EngineSDL::Surface>(surf);
 }
 
-std::unique_ptr<SDL::Surface> SDL::makeSquareSurface(int w, int h, SDL_Color& color)
+std::unique_ptr<EngineSDL::Surface> EngineSDL::makeSquareSurface(int w, int h, SDL_Color& color)
 {
 	DEBUG("Creating square Surface object");
 	SDL_Surface* surf = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
@@ -186,5 +186,5 @@ std::unique_ptr<SDL::Surface> SDL::makeSquareSurface(int w, int h, SDL_Color& co
 	SDL_FillRect(surf, nullptr, SDL_MapRGB(surf->format, color.r, color.g, color.b));
 
 	DEBUG("Surface address: %p", surf);
-	return std::make_unique<SDL::Surface>(surf);
+	return std::make_unique<EngineSDL::Surface>(surf);
 }
